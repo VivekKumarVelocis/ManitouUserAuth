@@ -9,6 +9,7 @@ import com.userauth.entity.Role;
 @Service
 public interface RoleService {
 
-	public Response getRoleById(Long roleId) throws Exception;
+	public Response findAllRole() throws Exception;
+	public Response getRoleById(String roleId) throws Exception;
 	public Role findByRoleName(String roleName) throws Exception;
 }

@@ -19,6 +19,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -29,6 +30,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.userauth.config.JwtTokenUtil;
 import com.userauth.constant.AuthConstant;
 import com.userauth.entity.Response;
+import com.userauth.entity.Role;
+import com.userauth.entity.User;
 import com.userauth.security.CustomUserDetailsService;
 
 import io.jsonwebtoken.ExpiredJwtException;
@@ -46,6 +49,11 @@ public class JwtFilterConfig extends OncePerRequestFilter {
 	@Autowired
 	private CustomUserDetailsService szCustomUserDetailsService;
   
+	@Autowired
+	private UserDetailsService userDetailsService;
+
+	private List<SimpleGrantedAuthority> authority;
+	
 	Response jwtResponseBack = null;
 	private final static Logger logger = LoggerFactory.getLogger(JwtTokenUtil.class);
 
@@ -75,12 +83,22 @@ public class JwtFilterConfig extends OncePerRequestFilter {
 
 			if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-				UserDetails userDetails = (UserDetails) szCustomUserDetailsService.loadUserByUsername(userName);
-
+				User userDetails =   szCustomUserDetailsService.loadUserByUsername(userName);
+//				UserDetails userDetails = (UserDetails) userDetailsService.loadUserByUsername(userName);
+				
+				
 				if (jwtTokenUtil.validateToken(token, userDetails)) {
 
+
+					authority = new ArrayList<SimpleGrantedAuthority>();
+					
+					for(Role role:userDetails.getRoles()) {
+						authority.add(new SimpleGrantedAuthority(role.getRoleId()));
+					}
+					
+					
 					UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-							userDetails, null, userDetails.getAuthorities());
+							userDetails, null, authority);
 
 					usernamePasswordAuthenticationToken
 							.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -89,8 +107,8 @@ public class JwtFilterConfig extends OncePerRequestFilter {
 				}
 
 			}
-//			if(token==null &&   !request.getRequestURI().contains("/authenticate/createToken") &&  !request.getRequestURI().contains("/user/saveUser")) {
-			if(token==null &&   !request.getRequestURI().contains("/authenticate/createToken")){
+			if(token==null &&   !request.getRequestURI().contains("/authenticate/createToken") &&  !request.getRequestURI().contains("/user/saveUser")) {
+//			if(token==null &&   !request.getRequestURI().contains("/authenticate/createToken")){
 			logger.info("Token not present ::::::::");
 				System.out.println("Exception is :::::"+AuthConstant.TOKEN_BLANK);
 				throw new Exception();

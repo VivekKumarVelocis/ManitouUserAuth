@@ -12,7 +12,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -37,6 +39,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Autowired
 	private JwtFilterConfig szjwtRequestFilter;
+
 
 	/*
 	 * configure AuthenticationManager so that it knows from where to load user for
@@ -69,10 +72,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //			}
 //		};
 //	}
-	@Bean
-	public UserDetailsService userDetailsService() {
-		return new CustomUserDetailsService();
-	}
+//	@Bean
+//	public UserDetailsService userDetailsService() {
+//		return new CustomUserDetailsService();
+//	}
 
 	@Bean
 	public DaoAuthenticationProvider authenticationProvider() {
@@ -85,9 +88,13 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(HttpSecurity l_httpSecurity) throws Exception {
-		// We don't need CSRF for this example
-		l_httpSecurity.csrf().disable().authorizeRequests().antMatchers("/authenticate/**").permitAll()
-				.antMatchers("/user/**").hasAuthority("SUPERADMIN").anyRequest().authenticated().and()
+ 
+		l_httpSecurity.csrf().disable()
+//		.authorizeRequests().antMatchers("/authenticate/**").permitAll()
+				.authorizeRequests().antMatchers("/authenticate/**").permitAll()
+				.antMatchers("/user/**").hasAuthority("SUPERADMIN")
+				.antMatchers("/dispatch/**").hasAnyAuthority("MACHINE_SALES_ADMIN","SUPERADMIN") 
+				.anyRequest().authenticated().and()
 				.exceptionHandling().authenticationEntryPoint(szjwtAuthenticationEntryPoint).and().sessionManagement()
 				.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
@@ -113,9 +120,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 		return super.authenticationManagerBean();
 	}
 
-	@Bean
-	public RestTemplate getRestTemplate() {
-		return new RestTemplate();
-	}
+	 
+	
 
 }

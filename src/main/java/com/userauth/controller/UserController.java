@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.userauth.config.JwtTokenUtil;
 import com.userauth.entity.Response;
 import com.userauth.entity.User;
+import com.userauth.entity.UserForResetPassword;
 import com.userauth.service.UserService;
 
 @RestController
@@ -23,11 +25,13 @@ public class UserController {
 
 	@Autowired
 	private UserService userService;
-
+	@Autowired
+	private JwtTokenUtil jwtTokenUtil;
 	/*
 	 * This method is used to get the list of all users
 	 * 
 	 */
+	
 	@GetMapping("/getAllUser")
 	public ResponseEntity<Response> findAllUser() {
 
@@ -132,4 +136,54 @@ public class UserController {
 		}
 
 	}
+	
+	@PostMapping("/resetPasswordByUser")
+	public ResponseEntity<Response> resetPasswordByUser(@RequestBody UserForResetPassword user) {
+		try {
+			logger.info("reset password by user controller called::::::::::::Activity started ");
+			jwtTokenUtil.authenticate(user.getUserId(), user.getPassword());
+			Response response = userService.resetUserPassword(user);
+			
+				return ResponseEntity.ok( response);
+		} catch (Exception e) {
+			System.out.println("Exception is :::::::::::::"+e.getMessage());
+			e.printStackTrace();
+			return ResponseEntity.ok(Response.error( e.getMessage()));
+		}
+
+	}
+	
+	@PostMapping("/resetPasswordByAdmin")
+	public ResponseEntity<Response> resetPasswordByAdmin(@RequestBody UserForResetPassword user) {
+		try {
+			logger.info("reset password by admin controller called::::::::::::Activity started ");
+			Response response = userService.resetUserPassword(user);
+         
+			return ResponseEntity.ok( response);
+         
+		} catch (Exception e) {
+			System.out.println("Exception is :::::::::::::"+e.getMessage());
+			e.printStackTrace();
+			return ResponseEntity.ok(Response.error( e.getMessage() ));
+		}
+
+	}
+	
+	@PostMapping("/userLocked")
+	public ResponseEntity<Response> userLocked(@RequestParam("id") String userId,@RequestParam("lockedStatus") String lockedStatus) {
+			try {
+				logger.info("get user locked controller called::::::::::::Activity started " + userId);
+				Response response = userService.userLocked(userId,lockedStatus);
+				
+					logger.info("get user locked  controller ::::::::::::Activity End ");
+					return ResponseEntity.ok(Response.ok(response));
+				
+			} catch (Exception e) {
+				System.out.println("Exception is :::::::::::::"+e.getMessage());
+				e.printStackTrace();
+				return ResponseEntity.ok(Response.error(e.getMessage()));
+			}
+		}
+
+
 }

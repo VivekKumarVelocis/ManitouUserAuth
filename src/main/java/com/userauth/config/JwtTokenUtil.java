@@ -17,8 +17,10 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-
+ 
 import com.userauth.constant.AuthConstant;
+import com.userauth.entity.User;
+import com.userauth.security.CustomAuthenticationProvider;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -32,11 +34,12 @@ public class JwtTokenUtil implements Serializable {
 
 	private static final long serialVersionUID = -2550185165626007488L;
 	private final static Logger logger = LoggerFactory.getLogger(JwtTokenUtil.class);
-
+	@Autowired
+	private CustomAuthenticationProvider authenticationManager;
 	public static String sessionId = null;
 
-	@Autowired
-	private AuthenticationManager authenticationManager;
+//	@Autowired
+//	private AuthenticationManager authenticationManager;
 
 	@Value("${jwt.secret}")
 	private String secret;
@@ -78,9 +81,9 @@ public class JwtTokenUtil implements Serializable {
 				.signWith(SignatureAlgorithm.HS256, secret).compact();
 	}
 
-	public Boolean validateToken(String token, UserDetails userDetails) {
+	public Boolean validateToken(String token, User userDetails) {
 		final String username = extractUsername(token);
-		return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+		return (username.equals(userDetails.getUserName()) && !isTokenExpired(token));
 	}
 
 	public String getSessionFormTokens(String jwtToken) {

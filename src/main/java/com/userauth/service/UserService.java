@@ -4,7 +4,8 @@ package com.userauth.service;
 import org.springframework.stereotype.Service;
 
 import com.userauth.entity.Response;
-import com.userauth.entity.User; 
+import com.userauth.entity.User;
+import com.userauth.entity.UserForResetPassword; 
  
 /*
 *Added by Vivek Kumar. service interface used to declared the operation performed on user entity 
@@ -25,4 +26,10 @@ public interface UserService {
 	public Response findById(Long id) throws Exception;
 
 	public Response deleteUserById(String userid) throws Exception;
+	
+	public Response updateUserWhileAuthentication(User user) throws Exception;
+	
+	public Response resetUserPassword(UserForResetPassword user) throws Exception ;
+	
+	public Response userLocked(String userId, String lockedStatus);
 }

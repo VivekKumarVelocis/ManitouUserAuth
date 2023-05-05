@@ -1,5 +1,6 @@
 package com.userauth.serviceImpl;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -23,7 +24,7 @@ public class RoleServiceImpl implements RoleService {
 	private RoleRepository roleRepo;
 
 	@Override
-	public Response getRoleById(Long roleId) throws Exception {
+	public Response getRoleById(String roleId) throws Exception {
 		try {
 			logger.info("get role by id service impl called ::::::::::::::: Activity started  " + roleId);
 			Role roles = roleRepo.findByRoleId(roleId);
@@ -45,8 +46,28 @@ public class RoleServiceImpl implements RoleService {
 
 	@Override
 	public Role findByRoleName(String roleName) throws Exception {
-		Role findByRoleName = roleRepo.findByRoleName(roleName);
+		Role findByRoleName = roleRepo.findByRoleDesc(roleName);
 		return findByRoleName;
+	}
+
+	@Override
+	public Response findAllRole() throws Exception {
+		try {
+			logger.info("findAllRole() method  " );
+			List<Role> roles = roleRepo.findAll();
+			
+			if (roles.size() == 0) {
+				logger.error("Error::::: No record found");
+				return new Response(AuthConstant.FAILURE, AuthConstant.ERROR_CODE, AuthConstant.NO_RECORD_FOUND);
+			}
+			logger.info("Roles fetched successfully !!!!!!!!");
+			return new Response(AuthConstant.SUCCESS, AuthConstant.SUCCESS_CODE, roles);
+
+		} catch (Exception e) {
+			logger.error("Error in findAllRole() method ");
+			e.printStackTrace();
+			return new Response(AuthConstant.FAILURE, AuthConstant.ERROR_CODE, e.getMessage());
+		}
 	}
 
 }

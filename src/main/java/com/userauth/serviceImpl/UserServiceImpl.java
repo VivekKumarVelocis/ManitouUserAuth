@@ -15,11 +15,14 @@ import org.springframework.stereotype.Service;
 
 import com.userauth.constant.AuthConstant;
 import com.userauth.constant.ManitouConstants;
+import com.userauth.entity.Branch;
 import com.userauth.entity.Response;
 import com.userauth.entity.Role;
 import com.userauth.entity.User;
+import com.userauth.entity.UserForResetPassword;
 import com.userauth.repository.UserRepository;
 import com.userauth.security.PasswordEncoderUtility;
+import com.userauth.service.BranchService;
 import com.userauth.service.RoleService;
 import com.userauth.service.UserService;
 
@@ -30,13 +33,16 @@ import com.userauth.service.UserService;
 public class UserServiceImpl implements UserService {
 
 	private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
-	
+
 	@Autowired
 	private UserRepository userRepo;
 
 	@Autowired
 	private RoleService roleService;
- 
+
+	@Autowired
+	private BranchService branchService;
+
 	@Override
 	public Response findAllUser() throws Exception {
 		try {
@@ -58,8 +64,20 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public User findByUserId(String userId) {
-		User user = userRepo.findByUserId(userId);
-		return user;
+		try {
+			User user = userRepo.findByUserId(userId);
+			if (user != null)
+				return user;
+			else {
+				logger.error(userId + " user id does  not exist");
+				return null;
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error("Error:::::::::" + e.getMessage());
+			return null;
+		}
 	}
 
 	@Override
@@ -99,7 +117,7 @@ public class UserServiceImpl implements UserService {
 
 			Optional<User> ofNullable = Optional.ofNullable(userRepo.findByUserId(user.getUserId()));
 
-			if (!ofNullable.isPresent()) { 
+			if (!ofNullable.isPresent()) {
 
 				user.setPassword(PasswordEncoderUtility.passwordEncoder(user.getPassword()));
 				user.setLocked_status("N");
@@ -113,14 +131,30 @@ public class UserServiceImpl implements UserService {
 					Set<Role> rolesforUser = new HashSet<>();
 
 					for (Role role : newuserRoles) {
-						Long roleId = role.getRoleId();
+						String roleId = role.getRoleId();
 						Role rolesinTable = (Role) roleService.getRoleById(roleId).getData();
-						rolesforUser.add(rolesinTable);
+
+						if (rolesinTable != null)
+							rolesforUser.add(rolesinTable);
+						else
+							return new Response(AuthConstant.FAILURE, AuthConstant.ERROR_CODE,
+									AuthConstant.NO_RECORD_FOUND + " FOR THE PROVIDED ROLE");
 					}
 
 					user.setRoles(rolesforUser);
 				}
 
+				if (user.getBranch() != null) {
+					String branchId = user.getBranch().getBranchId();
+					Response branchResponse = branchService.getBranchById(branchId);
+
+					if (branchResponse.getData() != null) {
+						user.setBranch((Branch) branchResponse.getData());
+					} else {
+						return new Response(AuthConstant.FAILURE, AuthConstant.ERROR_CODE,
+								AuthConstant.NO_RECORD_FOUND + " FOR THE PROVIDED BRANCH");
+					}
+				}
 				User saveUser = userRepo.save(user);
 				return new Response(AuthConstant.SUCCESS, AuthConstant.SUCCESS_CODE, saveUser);
 			} else {
@@ -167,7 +201,7 @@ public class UserServiceImpl implements UserService {
 
 			int i = 0;
 			for (Role role : roles) {
-				roleOfLoginUser[i++] = role.getRoleName();
+				roleOfLoginUser[i++] = role.getRoleId();
 
 			}
 
@@ -190,29 +224,30 @@ public class UserServiceImpl implements UserService {
 						Set<Role> rolesforUser = new HashSet<>();
 
 						for (Role role : newRoleForUser) {
-							Long roleId = role.getRoleId();
+							String roleId = role.getRoleId();
 							Role rolesinTable = (Role) roleService.getRoleById(roleId).getData();
-							
-							if(rolesinTable !=null) {
+
+							if (rolesinTable != null) {
 								rolesforUser.add(rolesinTable);
-							}else {
+							} else {
 								throw new Exception("Provided Role not present");
 							}
-							
+
 						}
 
 						userData.get().setRoles(rolesforUser);
 					}
 
 					User saveUser = userRepo.save(userData.get());
-					logger.info(loginusername+" user updated the data successfully for ....... "+user.getUserName());
+					logger.info(
+							loginusername + " user updated the data successfully for ....... " + user.getUserName());
 					return new Response(AuthConstant.SUCCESS, AuthConstant.SUCCESS_CODE, saveUser);
 				} else {
 					logger.error("Error::::::::::Userid not present");
 					return new Response(AuthConstant.FAILURE, AuthConstant.ERROR_CODE, AuthConstant.USERID_NOT_PRESENT);
 				}
 			} else {
-				logger.error("Error::::::::::User is not authorized to upadate the data "+loginusername);
+				logger.error("Error::::::::::User is not authorized to upadate the data " + loginusername);
 				return new Response(AuthConstant.FAILURE, AuthConstant.ERROR_CODE, AuthConstant.USER_UNAUTHORIZED);
 			}
 		} catch (Exception e) {
@@ -245,4 +280,58 @@ public class UserServiceImpl implements UserService {
 
 		}
 	}
+
+	@Override
+	public Response updateUserWhileAuthentication(User user) throws Exception {
+		logger.info("update user at authentication user service impl called ::::::::::::::: Activity started  " + user);
+		try {
+			// User users = getLoggedUserDetails(user.getUserId());
+			// users.set (PasswordEncoderUtility.passwordEncoder(user.getPassword()));
+			User userss = userRepo.save(user);
+			return new Response(AuthConstant.SUCCESS, AuthConstant.SUCCESS_CODE, userss);
+		} catch (Exception e) {
+			e.printStackTrace();
+			e.getMessage();
+			return new Response(AuthConstant.FAILURE, AuthConstant.ERROR_CODE, e.getMessage());
+
+		}
+	}
+
+	@Override
+	public Response resetUserPassword(UserForResetPassword user) throws Exception {
+		logger.info("reset user service impl called ::::::::::::::: Activity started  " + user);
+		try {
+			User users = findByUserId(user.getUserId());
+			users.setPassword(PasswordEncoderUtility.passwordEncoder(user.getNewPassword()));
+			User userss = userRepo.save(users);
+			return new Response(AuthConstant.SUCCESS, AuthConstant.SUCCESS_CODE, userss);
+		} catch (Exception e) {
+			e.printStackTrace();
+			e.getMessage();
+			return new Response(AuthConstant.FAILURE, AuthConstant.ERROR_CODE, e.getMessage());
+
+		}
+	}
+
+	@Override
+	public Response userLocked(String userId, String lockedStatus) {
+		logger.info(" user locked service impl called ::::::::::::::: Activity started  " + userId);
+		try {
+			User users = findByUserId(userId);
+			if (lockedStatus.equals("N")) {
+				users.setLocked_status("N");
+			} else if (lockedStatus.equals("Y")) {
+				users.setLocked_status("Y");
+			}
+			User userss = userRepo.save(users);
+			logger.info(" user locked service impl called ::::::::::::::: Activity end  ");
+			return new Response(AuthConstant.SUCCESS, AuthConstant.SUCCESS_CODE, userss);
+		} catch (Exception e) {
+			e.printStackTrace();
+			e.getMessage();
+			return new Response(AuthConstant.FAILURE, AuthConstant.ERROR_CODE, e.getMessage());
+
+		}
+	}
+
 }

@@ -18,7 +18,7 @@ import com.userauth.constant.AuthConstant;
 import com.userauth.entity.AuthRequest;
 import com.userauth.entity.JwtResponseForToken;
 import com.userauth.entity.Response;
-import com.userauth.filter.APIClient;
+import com.userauth.proxy.DispatchProxy;
 import com.userauth.security.CustomUserDetailsService;
 
 @RestController
@@ -32,12 +32,8 @@ public class JwtAuthenticationController {
 
 	@Autowired
 	CustomUserDetailsService customerUserDetailsService;
-	
-	@Autowired
-	RestTemplate restTemplate;
-	
-@Autowired
-    private APIClient apiClient;
+	 
+	 
 	/*
 	 * This method is use to create Token
 	 */
@@ -47,9 +43,9 @@ public class JwtAuthenticationController {
 		try {
 			logger.info("generateToken():::::: method called to generate token ");
 
-			authenticationManager.authenticate(
-					new UsernamePasswordAuthenticationToken(authRequest.getUserName(), authRequest.getPassword()));
-
+//			authenticationManager.authenticate(
+//					new UsernamePasswordAuthenticationToken(authRequest.getUserName(), authRequest.getPassword()));
+			jwtTokenUtil.authenticate(authRequest.getUserName(), authRequest.getPassword());
 			String token = "Bearer " + jwtTokenUtil.generateToken(authRequest.getUserName());
 
 			System.out.println("Generated token is::::::: " + token);
@@ -65,33 +61,5 @@ public class JwtAuthenticationController {
 
 	}
 
-	@PostMapping("/authenticate/login")
-	public String login(HttpServletRequest request) throws Exception {
-		logger.info("login  controller called to create token for client::::::::::::::Activity started");
-		try {
-
-			 ResponseEntity<Response> departmentById = apiClient.getDepartmentById();
-			 Object data = departmentById.getBody().getData();
-			
-//			ObjectMapper oms = new ObjectMapper();
-//			AuthRequest l_authenticationRequest = oms.readValue(l_authenticationRequestData,AuthRequest.class);
  
-//			final String jwtTokenGetFromHeader = request.getHeader("Authorization");
-//			final User _userDetails = (User) customerUserDetailsService.loadUserByUsername(authrequest.getUserName());
-//		   
-//			ResponseEntity<AuthRequest> respstring = restTemplate.postForEntity("http://localhost:8004/dispatch/home", authrequest, AuthRequest.class);
- 
-//			if (respstring.getBody().getStatusCode().equals("200")) {
-			 return "done";
-//			} else {
-//				logger.info("login controller called to create token for client::::::::::::::Activity end");
-//			 
-//			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			return "exception";
-					 
-		}
-	}
 }
